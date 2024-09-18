@@ -1,6 +1,6 @@
 # Real-Time Collaborative Notepad
 
-A **Real-Time Collaborative Notepad** that allows multiple users to edit the same document simultaneously. This tool is perfect for teams working together remotely, enabling them to take shared notes, brainstorm ideas, or manage tasks in real-time. The application ensures that all changes are instantly reflected for everyone, enhancing productivity and teamwork.
+A **Real-Time Collaborative Notepad** that allows multiple users to edit the same document simultaneously. This tool is perfect for teams working together remotely, enabling them to take shared notes. The application ensures that all changes are instantly reflected for everyone.
 
 ## Demo
 
