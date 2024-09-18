@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Notepad with Authentication</title>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #333;
+        }
+        h1 {
+            color: #444;
+        }
+        .container {
+            width: 80%;
+            max-width: 800px;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-align: center;
+        }
+        #login, #notepad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        input[type="text"], input[type="password"] {
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #status, #connectedUsers {
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        .quill-container {
+            height: 300px;
+            width: 100%;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Real-Time Collaborative Notepad</h1>
+
+        <div id="login">
+            <label for="userID">User ID: </label>
+            <input type="text" id="userID" required>
+            <br>
+            <label for="password">Password: </label>
+            <input type="password" id="password" required>
+            <br>
+            <button id="loginButton">Login</button>
+            <div id="loginStatus"></div>
+        </div>
+
+        <div id="notepad" style="display: none;">
+            <h1 id="conuserID"></h1>  <!-- Display the connected user's ID here -->
+            <div id="editor" class="quill-container"></div>
+            <div id="status"></div>
+            <div id="connectedUsers"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+        const loginDiv = document.getElementById('login');
+        const notepadDiv = document.getElementById('notepad');
+        const loginButton = document.getElementById('loginButton');
+        const loginStatusDiv = document.getElementById('loginStatus');
+        const conuserID = document.getElementById('conuserID');  // Display connected user ID
+        const statusDiv = document.getElementById('status');
+        const connectedUsersDiv = document.getElementById('connectedUsers');
+        const editorElement = document.getElementById('editor');
+
+        const ws = new WebSocket('ws://localhost:5000');
+
+        // Initialize Quill editor
+        const quill = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': '1' }, { 'header': '2' }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['link']
+                ]
+            }
+        });
+
+        // Handle content changes in Quill editor
+        quill.on('text-change', () => {
+            const text = quill.root.innerHTML;
+            ws.send(JSON.stringify({
+                type: 'update',
+                text: text
+            }));
+        });
+
+        // Login button click event
+        loginButton.addEventListener('click', () => {
+            const userID = document.getElementById('userID').value;
+            const password = document.getElementById('password').value;
+
+            ws.send(JSON.stringify({
+                type: 'auth',
+                userID: userID,
+                password: password
+            }));
+        });
+
+        // Handle messages from the WebSocket server
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            // Handle authentication result
+            if (data.type === 'auth') {
+                if (data.success) {
+                    // Display the authenticated user's userID
+                    conuserID.textContent = data.message;
+
+                    loginDiv.style.display = 'none';
+                    notepadDiv.style.display = 'block';
+                    loginStatusDiv.textContent = '';
+                } else {
+                    loginStatusDiv.textContent = data.message;
+                }
+            }
+
+            // Handle document updates
+            if (data.type === 'update') {
+                const currentText = quill.root.innerHTML;
+                if (currentText !== data.text) {
+                    // Update content only if it has changed
+                    const delta = quill.clipboard.convert(data.text);
+                    quill.setContents(delta, 'silent');  // Use 'silent' to avoid triggering another text-change event
+                }
+                statusDiv.textContent = `${data.user} made changes`;
+            }
+
+            // Handle connected users list update
+            if (data.type === 'userList') {
+                connectedUsersDiv.innerHTML = `Connected users: ${data.connectedUsers.join(', ')}`;
+            }
+
+            // Handle initial document load
+            if (data.type === 'document') {
+                const delta = quill.clipboard.convert(data.text);
+                quill.setContents(delta, 'silent');  // Use 'silent' to avoid triggering another text-change event
+            }
+        };
+    </script>
+</body>
+</html>
