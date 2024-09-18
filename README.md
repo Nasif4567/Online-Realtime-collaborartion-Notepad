@@ -6,9 +6,8 @@ A **Real-Time Collaborative Notepad** that allows multiple users to edit the sam
 
 Check out a quick demo of the app in action below:
 
-## Demo
 
-[Watch the demo video](https://github.com/Nasif4567/Online-Realtime-collaborartion-Notepad/blob/main/demo.mov)
+[Watch the demo video](https://www.youtube.com/watch?v=fl8PlvwiJVg)
 
 
 
